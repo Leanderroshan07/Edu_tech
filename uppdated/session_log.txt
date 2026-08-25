@@ -1,0 +1,70 @@
+﻿============================================================
+SESSION LOG — PUBLIC REGISTRATION & PROFILE MANAGEMENT
+============================================================
+Date: 2026-08-25
+Project: LMS Backend & Frontend (NestJS 11 + Next.js + Prisma + Supabase PostgreSQL)
+
+SUMMARY OF WORK COMPLETED:
+
+1. PUBLIC REGISTRATION ENDPOINT (POST /auth/register)
+   - Created public `POST /auth/register` endpoint in `AuthController` & `AuthService`.
+   - Delegates user + profile creation to `UsersService.create()` in a Prisma `$transaction`.
+   - Allows users to register directly as `STUDENT`, `TEACHER`, or `HOD` with their department and role-specific profile attributes.
+   - Automatically signs and issues JWT access token and refresh cookie upon successful registration.
+
+2. PROFILE MANAGEMENT ENDPOINT (PATCH /auth/profile)
+   - Created protected `PATCH /auth/profile` endpoint in `AuthController`, `AuthService`, and `UsersService`.
+   - Allows authenticated users to update personal details (firstName, lastName, phone, gender, dateOfBirth, profileImageUrl) and editable role profile fields (e.g. `section` for Student, `designation` & `qualification` for Teacher).
+
+3. PUBLIC DEPARTMENTS ACCESS (GET /departments)
+   - Made `GET /departments` public in `DepartmentsController` so unregistered users on the Sign Up / Registration page can view available departments (`CSE`, `ECE`, `MECH`, `EEE`) in the dropdown selector.
+
+4. FRONTEND REDESIGN & CLEANUP (app/page.tsx & app/globals.css)
+   - Cleaned up cluttered logic in the frontend interface.
+   - Added tabbed Auth Page with **Sign In** and **Sign Up / Register** modes.
+   - Dynamic form rendering during Registration based on selected role:
+     * **STUDENT**: firstName, lastName, email, password, departmentId, registerNumber, admissionYear, academicYear, semester, section.
+     * **TEACHER**: firstName, lastName, email, password, departmentId, employeeNumber, designation, qualification.
+     * **HOD**: firstName, lastName, email, password, departmentId, employeeNumber.
+   - Added **My Profile** section in the Dashboard allowing any logged in user to view their profile card, role badge, department details, and submit profile edits via `PATCH /auth/profile`.
+   - Admin overview and department management preserved.
+
+5. DATABASE CONNECTION & SEEDING
+   - Updated `.env` connection strings with `?sslmode=require&connect_timeout=30` for project `rgdhgyjbezmdqmggizat`.
+   - Synced Prisma schema to Supabase DB.
+   - Seeded default departments (`CSE`, `ECE`, `MECH`, `EEE`) and Admin user via `npm run prisma:seed`.
+   - Started NestJS API server listening on port 4000.
+
+UPDATE - REGISTRATION DEPARTMENT SELECTION & ADMIN DIRECTORY FILTERS:
+1. Department Selection on Register Page:
+   - Added automatic department loader triggered when switching to the Register tab or selecting department.
+   - Added a manual refresh button (↻) next to the department dropdown on the Sign Up form.
+   - Handled loading and fallback active departments gracefully.
+
+2. Admin People Directory Filters:
+   - Added Role Filter (ALL, STUDENT, TEACHER, HOD, ADMIN).
+   - Added Department Filter (ALL, or specific department).
+   - Added Status Filter (ALL, ACTIVE, INACTIVE, SUSPENDED).
+   - Added Search Input (search by name, email, register number, employee number, section, or department code).
+   - Added backend query support for `search` parameter in `UsersService.findAll` and `UsersController.findAll`.
+   - Added role summary stat cards at the top of the People Directory.
+
+UPDATE - ROLE BATCH ENROLLMENT, DEPARTMENT ISOLATION & TEACHING DEPARTMENTS:
+1. Role-Tailored Batch Enrollment:
+   - HOD adds Teacher batch: Clicking "+ Add Teacher Batch" presents the Teacher registration form (First Name, Last Name, Email, Password, Employee Number, Designation, Qualification) assigned to the HOD's department.
+   - Teacher adds Student batch: Clicking "+ Add Student Batch" presents the Student registration form (First Name, Last Name, Email, Password, Register Number, Admission Year, Academic Year, Semester, Section) assigned to the Teacher's department.
+   - Admin can add any role (Student, Teacher, HOD) across departments.
+
+2. Strict Department Isolation & Visibility:
+   - Students & HODs strictly see staff and students belonging to their own department (e.g. CSE members only see CSE).
+   - Teachers see members of their primary department AND any secondary teaching departments assigned to them.
+   - Admin sees members across all departments.
+
+3. Sidebar Departments Module Visibility:
+   - "Departments" module navigation tab is visible ONLY for HOD and ADMIN roles.
+   - Hidden for TEACHER and STUDENT roles.
+
+4. Multi-Department Teaching for Teachers (TeacherDepartment model):
+   - Added `TeacherDepartment` model to `prisma/schema.prisma` and synced with Supabase DB.
+   - Exposed `POST /auth/teaching-departments` and `DELETE /auth/teaching-departments/:departmentId`.
+   - Teachers can manage secondary teaching departments in their "My Profile" tab. Adding secondary departments expands their directory visibility to include students from those departments.

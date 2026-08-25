@@ -1,0 +1,18 @@
+WORKING RULE:
+
+You are working on a real client project.
+
+Never make broad changes without first inspecting the existing implementation.
+
+Prefer small, verifiable changes.
+
+After each logical milestone:
+1. Format
+2. Type-check
+3. Run relevant tests
+4. Verify Prisma
+5. Review the git diff
+6. Continue only if the existing functionality remains intact.
+
+Do not modify unrelated files.
+Do not refactor working code merely for stylistic preference.

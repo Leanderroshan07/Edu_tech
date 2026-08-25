@@ -1,0 +1,1014 @@
+You are the senior backend engineer responsible for implementing my production LMS backend.
+
+IMPORTANT:
+This is an existing project. DO NOT start from scratch.
+
+I have already completed:
+- Requirements
+- Roles and permissions
+- UI/UX design
+- System architecture
+- ER diagram
+- Final database design
+- Next.js project setup
+- Supabase PostgreSQL setup
+- Prisma setup
+- JWT authentication
+- Access token generation
+- Refresh token generation
+- Refresh token handling
+- Logout/authentication testing with Postman
+- A basic/sample User module used while implementing JWT
+
+Your job is to CONTINUE the existing implementation.
+
+DO NOT replace or rewrite my existing JWT authentication unless you find a real bug that prevents the required functionality.
+
+============================================================
+PROJECT STACK
+============================================================
+
+Frontend:
+- Next.js
+- TypeScript
+
+Backend:
+- NestJS
+- TypeScript
+- Prisma
+- PostgreSQL
+
+Database:
+- Supabase PostgreSQL
+
+Authentication:
+- JWT access token
+- JWT refresh token
+- Existing implementation must be preserved
+
+Development philosophy:
+- Production-quality code
+- NestJS-first architecture
+- Strong typing
+- Modular architecture
+- DTO validation
+- Guards
+- Dependency injection
+- Prisma through a dedicated PrismaService
+- No direct PrismaClient instantiation inside services
+- No duplicated business logic
+- No unnecessary abstractions
+- No premature microservices
+- No unnecessary libraries
+
+============================================================
+MOST IMPORTANT RULE
+============================================================
+
+FIRST INSPECT THE EXISTING CODEBASE.
+
+Before modifying anything:
+
+1. Inspect the repository structure.
+2. Identify frontend and backend directories.
+3. Inspect package.json files.
+4. Inspect the existing NestJS modules.
+5. Inspect the existing AuthModule.
+6. Inspect AuthController.
+7. Inspect AuthService.
+8. Inspect JWT strategy/guard.
+9. Inspect access-token implementation.
+10. Inspect refresh-token implementation.
+11. Inspect logout implementation.
+12. Inspect existing UserModule.
+13. Inspect UserController.
+14. Inspect UserService.
+15. Inspect existing Prisma schema.
+16. Inspect PrismaService.
+17. Inspect existing migrations.
+18. Inspect environment variables/configuration.
+19. Inspect existing tests.
+20. Determine what is already implemented and working.
+
+DO NOT assume the project structure.
+
+DO NOT recreate files that already exist.
+
+DO NOT overwrite working authentication.
+
+Before coding, give me a short implementation assessment:
+
+- Existing modules
+- Existing auth implementation
+- Existing User implementation
+- Existing Prisma models
+- Missing pieces
+- Files that need modification
+- Files that need creation
+- Potential conflicts
+
+Then implement the work.
+
+============================================================
+DATABASE SOURCE OF TRUTH
+============================================================
+
+The finalized LMS database design is the source of truth.
+
+The database contains these major areas:
+
+USERS / RBAC:
+- users
+- departments
+- student_profiles
+- teacher_profiles
+- hod_profiles
+
+ACADEMIC:
+- courses
+- course_teachers
+- course_enrollments
+- subjects
+- topics
+
+CONTENT:
+- videos
+- documents
+- content_assignments
+
+LEARNING / TRACKING:
+- student_progress
+- video_watch_sessions
+- focus_sessions
+
+ASSESSMENTS:
+- assignments
+- assignment_submissions
+- tests
+- questions
+- question_options
+- test_attempts
+- answers
+
+COMMUNICATION:
+- conversations
+- conversation_members
+- messages
+
+NOTIFICATIONS:
+- notifications
+
+ACTIVITY:
+- activity_logs
+
+Do not invent a different database architecture unless absolutely necessary.
+
+Do not remove finalized models simply because they are not immediately needed.
+
+Do not create unrelated tables.
+
+The sessions/refresh-token table is intentionally NOT part of the current database freeze. I may add a dedicated sessions table later. Do not redesign authentication around a sessions table now.
+
+============================================================
+CURRENT IMPLEMENTATION STATUS
+============================================================
+
+Authentication is already implemented.
+
+The existing authentication includes:
+
+- Login
+- Password hashing
+- JWT access token
+- JWT refresh token
+- Refresh flow
+- Logout
+- Postman testing
+
+Treat this as existing functionality.
+
+Your responsibility is to integrate the real User domain model with the existing authentication.
+
+The existing sample User model may contain fields such as:
+- name
+- email
+- password
+- phone
+- role
+
+Do not blindly delete it.
+
+Instead:
+
+1. Inspect it.
+2. Determine which fields are reusable.
+3. Migrate it toward the finalized User model.
+4. Preserve authentication compatibility.
+5. Update auth code only where required.
+
+============================================================
+PHASE CURRENTLY BEING IMPLEMENTED
+============================================================
+
+We are currently implementing:
+
+PHASE 6 — USER & DEPARTMENT MANAGEMENT
+
+Followed by:
+
+- Student Profile
+- Teacher Profile
+- HOD Profile
+- Real RBAC
+- Department-level authorization
+
+DO NOT jump ahead to:
+- Video system
+- Chat
+- Analytics
+- Focus Mode
+- Notifications
+- Advanced frontend dashboards
+
+unless required to complete the current foundation.
+
+============================================================
+TARGET USER MODEL
+============================================================
+
+The production User entity should conceptually contain:
+
+users
+- id
+- role
+- status
+- email
+- password_hash
+- first_name
+- last_name
+- phone
+- profile_image_url
+- date_of_birth
+- gender
+- last_login_at
+- email_verified_at
+- created_at
+- updated_at
+- deleted_at
+
+Use appropriate PostgreSQL/Prisma types.
+
+Important:
+- email must be unique
+- password must NEVER be returned through normal API responses
+- password_hash must never be exposed to frontend DTOs
+- soft deletion should be respected where applicable
+- inactive/suspended users should not be able to authenticate
+- email should be normalized appropriately
+
+============================================================
+ROLES
+============================================================
+
+The platform has exactly four primary roles:
+
+STUDENT
+TEACHER
+HOD
+ADMIN
+
+Do not introduce additional roles unless absolutely necessary.
+
+Role responsibilities:
+
+STUDENT:
+- Access own profile
+- Access enrolled courses
+- Access learning content
+- Submit assignments
+- Take tests
+- Chat where permitted
+- View own progress
+
+TEACHER:
+- Manage assigned courses/subjects/content
+- View permitted students
+- Create assignments
+- Create tests
+- Review submissions
+- Monitor student learning activity
+- Chat where permitted
+
+HOD:
+- Manage/monitor their department
+- View department teachers
+- View department students
+- View department courses/content
+- View department analytics
+- Must NOT automatically access other departments
+
+ADMIN:
+- Platform-level management
+- Users
+- Departments
+- Roles
+- Courses
+- System management
+- Platform analytics
+
+============================================================
+PROFILE MODELS
+============================================================
+
+Implement one-to-one profile relationships.
+
+student_profiles:
+- id
+- user_id
+- department_id
+- register_number
+- admission_year
+- academic_year
+- semester
+- section
+- created_at
+- updated_at
+
+teacher_profiles:
+- id
+- user_id
+- department_id
+- employee_number
+- designation
+- qualification
+- created_at
+- updated_at
+
+hod_profiles:
+- id
+- user_id
+- department_id
+- employee_number
+- created_at
+- updated_at
+
+IMPORTANT:
+
+Each profile must belong to exactly one User.
+
+user_id must be unique in each profile table.
+
+A User should not accidentally have multiple StudentProfile rows.
+
+============================================================
+DEPARTMENT MODEL
+============================================================
+
+departments:
+
+- id
+- code
+- name
+- description
+- is_active
+- created_at
+- updated_at
+
+Constraints:
+- code unique
+- department name should have an appropriate uniqueness strategy
+- inactive departments should be handled correctly
+
+Examples:
+- CSE
+- ECE
+- EEE
+- MECH
+
+============================================================
+USER MODULE
+============================================================
+
+Create or complete:
+
+UserModule
+
+Expected architecture:
+
+users/
+  users.module.ts
+  users.controller.ts
+  users.service.ts
+  dto/
+  guards/ or authorization-related code if appropriate
+  types/ if necessary
+
+Use NestJS dependency injection.
+
+Do NOT do:
+
+new PrismaClient()
+
+inside a service.
+
+Use:
+
+PrismaService
+
+through dependency injection.
+
+============================================================
+USER API
+============================================================
+
+Implement appropriate APIs for admin user management.
+
+At minimum:
+
+POST /users
+GET /users
+GET /users/:id
+PATCH /users/:id
+PATCH /users/:id/status
+
+Potentially:
+
+DELETE /users/:id
+
+but prefer soft deletion if that matches the existing architecture.
+
+The exact endpoint design should follow the existing project conventions.
+
+DO NOT create duplicate endpoints if equivalent endpoints already exist.
+
+============================================================
+CREATE USER BEHAVIOR
+============================================================
+
+Admin should be able to create:
+
+- Student
+- Teacher
+- HOD
+
+User creation should:
+
+1. Validate DTO.
+2. Validate email.
+3. Validate role.
+4. Hash password if a password is supplied/generated.
+5. Create User.
+6. Create the corresponding profile when appropriate.
+7. Associate department where required.
+8. Use a Prisma transaction where multiple records must be created atomically.
+9. Return a safe response without password_hash.
+
+Example:
+
+Admin creates Student:
+
+User
+  ↓
+role = STUDENT
+  ↓
+StudentProfile
+  ↓
+Department
+
+Admin creates Teacher:
+
+User
+  ↓
+role = TEACHER
+  ↓
+TeacherProfile
+  ↓
+Department
+
+Admin creates HOD:
+
+User
+  ↓
+role = HOD
+  ↓
+HODProfile
+  ↓
+Department
+
+Do not allow a STUDENT user to create an ADMIN user.
+
+============================================================
+DEPARTMENT MODULE
+============================================================
+
+Create:
+
+DepartmentModule
+
+Structure:
+
+departments/
+  departments.module.ts
+  departments.controller.ts
+  departments.service.ts
+  dto/
+
+Implement appropriate CRUD.
+
+At minimum:
+
+POST /departments
+GET /departments
+GET /departments/:id
+PATCH /departments/:id
+PATCH /departments/:id/status
+
+Use existing project conventions.
+
+Only ADMIN should have unrestricted department-management permissions.
+
+============================================================
+RBAC
+============================================================
+
+Authentication answers:
+
+WHO IS THE USER?
+
+Authorization answers:
+
+WHAT IS THE USER ALLOWED TO DO?
+
+The backend MUST enforce authorization.
+
+Frontend route protection is NOT sufficient.
+
+A user must not gain access simply by manually calling an API.
+
+Example:
+
+GET /users
+
+STUDENT → 403
+TEACHER → 403
+HOD → 403
+ADMIN → allowed
+
+Department example:
+
+HOD CSE
+
+must NOT access:
+
+ECE students
+ECE teachers
+ECE courses
+
+unless explicitly authorized by the future permission model.
+
+Do not implement department authorization using frontend checks.
+
+============================================================
+AUTHORIZATION ARCHITECTURE
+============================================================
+
+Use NestJS guards/decorators where appropriate.
+
+Preferred conceptual flow:
+
+Request
+ ↓
+JWT authentication guard
+ ↓
+Authenticated user
+ ↓
+Role guard
+ ↓
+Resource/department authorization
+ ↓
+Controller
+ ↓
+Service
+ ↓
+Prisma
+ ↓
+PostgreSQL
+
+Do not trust:
+- user-supplied role
+- user-supplied department_id
+- frontend permissions
+- hidden UI buttons
+
+The server must derive authorization from authenticated identity and database relationships.
+
+============================================================
+DTO VALIDATION
+============================================================
+
+Use DTOs.
+
+Validate:
+- email
+- names
+- phone
+- role
+- status
+- department ID
+- register number
+- employee number
+- academic year
+- semester
+- section
+
+Use the project's existing validation setup.
+
+If validation pipe is already configured, reuse it.
+
+Do not create a second validation mechanism.
+
+============================================================
+API RESPONSE SECURITY
+============================================================
+
+Never return:
+
+password_hash
+
+Never expose sensitive authentication fields unnecessarily.
+
+User response should look conceptually like:
+
+{
+  id,
+  email,
+  firstName,
+  lastName,
+  phone,
+  role,
+  status,
+  department,
+  createdAt
+}
+
+Do not return password_hash.
+
+Do not return refresh token in ordinary User APIs.
+
+============================================================
+PRISMA
+============================================================
+
+Update schema.prisma carefully.
+
+Do not destroy existing migrations.
+
+Before changing schema:
+
+1. Inspect current schema.
+2. Inspect current migration history.
+3. Compare current models with finalized DB design.
+4. Make the minimum required schema changes.
+5. Run Prisma formatting.
+6. Run Prisma validation.
+7. Generate Prisma Client.
+8. Create migration.
+9. Apply migration to the configured development database only.
+
+Do NOT reset the production database.
+
+Do NOT run destructive commands without explicit confirmation.
+
+Never use:
+
+prisma migrate reset
+
+on a real/production database.
+
+============================================================
+DATABASE RELATIONSHIPS
+============================================================
+
+Important relationships:
+
+User
+  ├── StudentProfile
+  ├── TeacherProfile
+  └── HODProfile
+
+Department
+  ├── StudentProfiles
+  ├── TeacherProfiles
+  └── HODProfile
+
+Important one-to-one constraints:
+
+student_profiles.user_id UNIQUE
+teacher_profiles.user_id UNIQUE
+hod_profiles.user_id UNIQUE
+
+Department:
+departments.code UNIQUE
+
+Do not create duplicate profile relationships.
+
+============================================================
+TRANSACTIONS
+============================================================
+
+Use Prisma transactions when creating or updating related records.
+
+Example:
+
+Create Student:
+
+BEGIN
+  Create User
+  Create StudentProfile
+COMMIT
+
+If StudentProfile creation fails:
+ROLLBACK User creation.
+
+Do not leave partially created users.
+
+============================================================
+ERROR HANDLING
+============================================================
+
+Implement proper NestJS exceptions.
+
+Examples:
+
+Invalid input:
+400 Bad Request
+
+Unauthenticated:
+401 Unauthorized
+
+Authenticated but forbidden:
+403 Forbidden
+
+User not found:
+404 Not Found
+
+Duplicate email:
+409 Conflict
+
+Duplicate register/employee number:
+409 Conflict
+
+Do not return raw database errors to the client.
+
+============================================================
+SECURITY
+============================================================
+
+Maintain existing password hashing.
+
+Never store plaintext passwords.
+
+Never log:
+- password
+- password_hash
+- access token
+- refresh token
+
+Do not expose JWT secrets.
+
+Use environment variables.
+
+Do not commit .env files.
+
+Do not print tokens in logs.
+
+============================================================
+TESTING
+============================================================
+
+After implementation, test:
+
+1. Admin login
+2. Student login
+3. Teacher login
+4. HOD login
+
+User management:
+
+5. Admin creates Student
+6. Admin creates Teacher
+7. Admin creates HOD
+8. Admin lists users
+9. Admin gets user
+10. Admin updates user
+11. Admin disables user
+
+Authorization:
+
+12. Student attempts admin endpoint → 403
+13. Teacher attempts admin endpoint → 403
+14. HOD attempts admin endpoint → 403 where appropriate
+15. Admin succeeds
+
+Department:
+
+16. Admin creates department
+17. Admin updates department
+18. Admin disables department
+
+Department authorization:
+
+19. CSE HOD accesses CSE → allowed
+20. CSE HOD accesses ECE → forbidden
+
+Profile:
+
+21. Student has StudentProfile
+22. Teacher has TeacherProfile
+23. HOD has HODProfile
+
+Security:
+
+24. Password never appears in API response
+25. Invalid email rejected
+26. Duplicate email rejected
+27. Duplicate register number rejected
+28. Duplicate employee number rejected
+29. Inactive/suspended account cannot login
+
+============================================================
+POSTMAN
+============================================================
+
+After implementation, make sure the existing Postman authentication workflow still works.
+
+Do not break:
+
+POST /auth/login
+POST /auth/refresh
+POST /auth/logout
+
+If the existing endpoints have different names, preserve the existing names.
+
+Test the complete flow:
+
+Login
+ ↓
+Access token
+ ↓
+Protected User API
+ ↓
+Refresh token
+ ↓
+New access token
+ ↓
+Protected API
+ ↓
+Logout
+ ↓
+Token/session invalidation according to existing implementation
+
+============================================================
+FRONTEND
+============================================================
+
+Do NOT build the complete frontend User Management UI yet unless the repository already requires it for the current implementation.
+
+Focus primarily on backend foundation.
+
+If frontend integration is necessary, create only the minimum API client/hooks/types required.
+
+Do not redesign the existing UI.
+
+============================================================
+CODE QUALITY
+============================================================
+
+Follow the existing project style if it is good.
+
+Prefer:
+
+- NestJS modules
+- Controllers
+- Services
+- DTOs
+- Guards
+- Decorators
+- PrismaService
+- typed responses
+- transactions
+- centralized configuration
+- reusable validation
+
+Avoid:
+
+- any
+- unnecessary classes
+- unnecessary abstraction
+- duplicated Prisma queries
+- direct database access from controllers
+- direct PrismaClient construction
+- business logic in controllers
+- business logic in DTOs
+- hardcoded secrets
+- hardcoded role strings everywhere
+
+Use enums/constants appropriately.
+
+============================================================
+IMPORTANT DEVELOPMENT RULE
+============================================================
+
+Implement incrementally.
+
+DO NOT generate the entire LMS at once.
+
+Current scope:
+
+PHASE 6:
+
+1. User
+2. Department
+3. StudentProfile
+4. TeacherProfile
+5. HODProfile
+6. RBAC
+7. Department-level authorization
+8. Tests
+9. Documentation
+
+STOP after this milestone.
+
+Do not implement:
+- courses
+- videos
+- assignments
+- tests
+- chat
+- analytics
+- notifications
+
+unless a small dependency is absolutely required.
+
+============================================================
+BEFORE EACH MAJOR CHANGE
+============================================================
+
+Explain briefly:
+
+- What you found
+- What you will change
+- Why
+- Which files will change
+- Any migration implications
+
+Then implement.
+
+Do not ask unnecessary questions if the repository already contains the answer.
+
+If something is genuinely ambiguous, inspect the existing code and finalized DB design first.
+
+============================================================
+FINAL VERIFICATION
+============================================================
+
+At the end, run appropriate checks:
+
+- npm/pnpm build
+- lint
+- type checking
+- Prisma validate
+- Prisma generate
+- tests
+- relevant integration tests
+
+Fix errors before declaring completion.
+
+Then provide a final report:
+
+1. Files created
+2. Files modified
+3. Database changes
+4. API endpoints added
+5. Guards/decorators added
+6. Authentication changes, if any
+7. Tests performed
+8. Commands executed
+9. Remaining issues
+10. Recommended next implementation step
+
+CRITICAL:
+
+DO NOT say "implemented successfully" merely because files were created.
+
+Verify the implementation.
+
+DO NOT rewrite the existing JWT system.
+
+DO NOT reset the database.
+
+DO NOT delete existing working functionality.
+
+DO NOT implement future LMS modules yet.
+
+Start by auditing the existing repository.

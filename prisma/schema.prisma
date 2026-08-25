@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  TEACHER
+  HOD
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// ─── Core models ──────────────────────────────────────────
+
+model User {
+  id              String     @id @default(uuid())
+  role            Role
+  status          UserStatus @default(ACTIVE)
+  email           String     @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  phone           String?
+  profileImageUrl String?
+  dateOfBirth     DateTime?
+  gender          Gender?
+  lastLoginAt     DateTime?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  refreshTokens  RefreshToken[]
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+  hodProfile     HodProfile?
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id                  String    @id @default(uuid())
+  tokenHash           String    @unique
+  userId              String
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  replacedByTokenHash String?
+  createdAt           DateTime  @default(now())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  studentProfiles     StudentProfile[]
+  teacherProfiles     TeacherProfile[]
+  hodProfiles         HodProfile[]
+  teacherDepartments  TeacherDepartment[]
+
+  @@map("departments")
+}
+
+model StudentProfile {
+  id             String     @id @default(uuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId   String
+  department     Department @relation(fields: [departmentId], references: [id])
+  registerNumber String     @unique
+  admissionYear  Int
+  academicYear   String
+  semester       Int
+  section        String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("student_profiles")
+}
+
+model TeacherProfile {
+  id             String              @id @default(uuid())
+  userId         String              @unique
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId   String
+  department     Department          @relation(fields: [departmentId], references: [id])
+  employeeNumber String              @unique
+  designation    String?
+  qualification  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  teachingDepartments TeacherDepartment[]
+
+  @@map("teacher_profiles")
+}
+
+model TeacherDepartment {
+  id               String         @id @default(uuid())
+  teacherProfileId String
+  teacherProfile   TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  departmentId     String
+  department       Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+
+  @@unique([teacherProfileId, departmentId])
+  @@map("teacher_departments")
+}
+
+model HodProfile {
+  id             String     @id @default(uuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId   String
+  department     Department @relation(fields: [departmentId], references: [id])
+  employeeNumber String     @unique
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("hod_profiles")
+}

@@ -1,0 +1,81 @@
+﻿WORKING RULES:
+
+You are working on a real client project.
+
+Never make broad changes without first inspecting the existing implementation.
+
+Prefer small, verifiable changes.
+
+============================================================
+BEFORE TOUCHING ANY FILE
+============================================================
+
+1. Read the file first.
+2. Confirm what already exists.
+3. Confirm what is missing.
+4. Explain what you will change and why.
+5. Then make the change.
+
+============================================================
+AFTER EACH LOGICAL MILESTONE
+============================================================
+
+1. Format:           npx prisma format  OR  npm run format
+2. Type-check:       npx tsc --noEmit
+3. Lint:             npm run lint
+4. Prisma validate:  npx prisma validate
+5. Prisma generate:  npx prisma generate
+6. Run tests:        npm test
+7. Review git diff:  git diff --stat
+8. Continue only if existing functionality remains intact.
+
+============================================================
+SPECIFIC RULES FOR THIS PROJECT
+============================================================
+
+- DO NOT modify auth.service.ts refresh/logout/token-rotation logic
+- DO NOT change the RefreshToken Prisma model
+- DO NOT change the HttpOnly cookie mechanism
+- DO NOT run prisma migrate reset on any real database
+- DO NOT use prisma db push on production
+- DO NOT return passwordHash in any API response — ever
+- DO NOT instantiate new PrismaClient() inside any service
+- DO NOT put business logic in controllers or DTOs
+- DO NOT add new npm packages without listing them and explaining why
+
+============================================================
+WHEN MODIFYING THE PRISMA SCHEMA
+============================================================
+
+Mandatory steps in order:
+1. Read current prisma/schema.prisma
+2. Read prisma/migrations/ history
+3. Make the minimum required change
+4. npx prisma format
+5. npx prisma validate
+6. npx prisma migrate dev --name <descriptive_name>
+7. npx prisma generate
+8. Update any TypeScript that references changed models
+
+============================================================
+WHEN MODIFYING AUTH
+============================================================
+
+After any change to auth.service.ts or jwt.strategy.ts:
+1. Re-run: npx tsc --noEmit
+2. Postman test:
+   - POST /auth/login
+   - GET  /auth/me
+   - POST /auth/refresh
+   - POST /auth/logout
+3. Confirm all four still return expected responses.
+4. Do not proceed if any auth test fails.
+
+============================================================
+GENERAL
+============================================================
+
+Do not modify unrelated files.
+Do not refactor working code merely for stylistic preference.
+Do not generate large amounts of code without pausing to verify.
+If something is ambiguous, read the existing code first before asking.

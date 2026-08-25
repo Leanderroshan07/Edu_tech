@@ -1,0 +1,93 @@
+﻿You are the senior backend engineer responsible for implementing my production LMS backend.
+
+IMPORTANT:
+This is an existing project. DO NOT start from scratch.
+
+============================================================
+WHAT HAS ALREADY BEEN IMPLEMENTED (DO NOT REDO)
+============================================================
+
+The following are CONFIRMED implemented, tested, and working as of the latest session:
+
+1. INFRASTRUCTURE & DATABASE:
+   - Next.js project (frontend)
+   - NestJS 11 project (backend, Express adapter)
+   - TypeScript throughout
+   - Supabase PostgreSQL connected via IPv4 session pooler (`aws-0-ap-northeast-1.pooler.supabase.com:5432` for direct/migrations, port 6543 for pooled runtime)
+   - ConfigModule (global, loads .env)
+   - PrismaModule (global) at `src/lib/database/` (`prisma.module.ts` + `prisma.service.ts`)
+   - AppModule at `src/app.module.ts` (with `AuthModule`, `UsersModule`, `DepartmentsModule` registered)
+
+2. AUTHENTICATION & SECURITY (`src/auth/`):
+   - `auth.module.ts`, `auth.controller.ts`, `auth.service.ts`, `auth.types.ts`
+   - `dto/login.dto.ts`
+   - `guards/jwt-auth.guard.ts`
+   - `strategies/jwt.strategy.ts` (includes `sub`, `email`, and `role` in JWT payload)
+   - Endpoints:
+     - `POST /auth/login` (checks status === ACTIVE, non-deleted, updates `lastLoginAt`, returns access token + user)
+     - `POST /auth/refresh` (rotates SHA-256 token, checks active status)
+     - `POST /auth/logout` (revokes refresh token, clears HttpOnly cookie)
+     - `GET  /auth/me` (JWT protected, includes user profile & department)
+   - Refresh token rotation & reuse detection in `refresh_tokens` table
+   - HttpOnly cookie management (`refresh_token`)
+   - Password hashing via bcrypt
+
+3. PRISMA SCHEMA (`prisma/schema.prisma` — PRODUCTION PHASE 6 COMPLETED):
+   - `Role` Enum: `STUDENT | TEACHER | HOD | ADMIN`
+   - `UserStatus` Enum: `ACTIVE | INACTIVE | SUSPENDED`
+   - `Gender` Enum: `MALE | FEMALE | OTHER`
+   - `User` Model (`users` table):
+     - `id`, `role`, `status`, `email` (unique, lowercase), `passwordHash`, `firstName`, `lastName`, `phone`, `profileImageUrl`, `dateOfBirth`, `gender`, `lastLoginAt`, `emailVerifiedAt`, `createdAt`, `updatedAt`, `deletedAt` (soft delete)
+   - `RefreshToken` Model (`refresh_tokens` table)
+   - `Department` Model (`departments` table): `id`, `code` (unique), `name` (unique), `description`, `isActive`, `createdAt`, `updatedAt`
+   - `StudentProfile` Model (`student_profiles` table): `userId` (unique), `departmentId`, `registerNumber` (unique), `admissionYear`, `academicYear`, `semester`, `section`
+   - `TeacherProfile` Model (`teacher_profiles` table): `userId` (unique), `departmentId`, `employeeNumber` (unique), `designation`, `qualification`
+   - `HodProfile` Model (`hod_profiles` table): `userId` (unique), `departmentId`, `employeeNumber` (unique)
+
+4. RBAC AUTHORIZATION (`src/common/`):
+   - Decorator: `src/common/decorators/roles.decorator.ts` (`@Roles(...)`)
+   - Guard: `src/common/guards/roles.guard.ts` (`RolesGuard` checks token `role` against required roles)
+
+5. DEPARTMENT MANAGEMENT (`src/module/departments/`):
+   - `DepartmentsModule`, `DepartmentsController`, `DepartmentsService`, DTOs
+   - Endpoints:
+     - `POST   /departments`        (Admin: create department)
+     - `GET    /departments`        (All authenticated users: list departments)
+     - `GET    /departments/:id`    (All authenticated users: get department details)
+     - `PATCH  /departments/:id`    (Admin: update department)
+     - `PATCH  /departments/:id/status` (Admin: activate/deactivate department)
+
+6. USER & PROFILE MANAGEMENT (`src/module/users/`):
+   - `UsersModule`, `UsersController`, `UsersService`, DTOs
+   - Atomic creation of User + Profile (`StudentProfile`, `TeacherProfile`, or `HodProfile`) inside Prisma `$transaction`
+   - Endpoints:
+     - `POST   /users`             (Admin: create user + profile)
+     - `GET    /users`             (Admin: list users with role/status filters & pagination)
+     - `GET    /users/:id`         (Admin: get user + profile)
+     - `PATCH  /users/:id`         (Admin: update user info)
+     - `PATCH  /users/:id/status`  (Admin: update status ACTIVE/INACTIVE/SUSPENDED)
+     - `DELETE /users/:id`         (Admin: soft delete setting `deletedAt`)
+
+7. SEEDING & BUILDS:
+   - Initial Admin seeded via `prisma/seed.ts` (`student@example.com` / `roshan1234567`)
+   - Backend API compiled (`npm run build:api`) with 0 errors.
+
+============================================================
+NEXT PHASE TO IMPLEMENT
+============================================================
+
+PHASE 7 — ACADEMIC MODULE (COURSES, SUBJECTS & TOPICS)
+
+Do not work on video streaming, chat, or advanced analytics until Phase 7 foundation is complete.
+
+============================================================
+DEVELOPMENT GUIDELINES
+============================================================
+
+- Always inspect existing code before making changes
+- Keep `src/common/` for shared guards/decorators
+- Keep feature modules in `src/module/<name>/`
+- Use constructor dependency injection for `PrismaService`
+- Validate DTOs with `class-validator`
+- Never return `passwordHash` in API responses
+- Test using Postman / API calls after each milestone
