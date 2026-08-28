@@ -11,6 +11,8 @@ import {
 } from 'class-validator';
 import { Role, Gender } from '@prisma/client';
 
+import { Type } from 'class-transformer';
+
 export class CreateUserDto {
   @IsEmail()
   email!: string;
@@ -53,15 +55,19 @@ export class CreateUserDto {
   registerNumber?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(2000)
   admissionYear?: number;
 
   @IsOptional()
-  @IsString()
-  academicYear?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(2000)
+  academicYear?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(8)

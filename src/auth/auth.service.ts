@@ -48,6 +48,10 @@ export class AuthService {
 			throw new UnauthorizedException('Invalid email or password');
 		}
 
+		if (user.status === UserStatus.PENDING) {
+			throw new UnauthorizedException('Account is pending approval from your department teacher or HOD');
+		}
+
 		if (user.status !== UserStatus.ACTIVE) {
 			throw new UnauthorizedException('Account is inactive or suspended');
 		}

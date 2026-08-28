@@ -1,4 +1,4 @@
-﻿============================================================
+============================================================
 SESSION LOG — PUBLIC REGISTRATION & PROFILE MANAGEMENT
 ============================================================
 Date: 2026-08-25
@@ -68,3 +68,37 @@ UPDATE - ROLE BATCH ENROLLMENT, DEPARTMENT ISOLATION & TEACHING DEPARTMENTS:
    - Added `TeacherDepartment` model to `prisma/schema.prisma` and synced with Supabase DB.
    - Exposed `POST /auth/teaching-departments` and `DELETE /auth/teaching-departments/:departmentId`.
    - Teachers can manage secondary teaching departments in their "My Profile" tab. Adding secondary departments expands their directory visibility to include students from those departments.
+
+UPDATE - LEARNING MATERIALS, VIDEO PLAYER & COMPREHENSIVE VIDEO ANALYTICS:
+1. Prisma Database Schema & Models:
+   - Enums: `MaterialType` (VIDEO, PDF, NOTES, IMAGE, AUDIO), `VideoEventType` (PLAY, PAUSE, RESUME, SEEK, COMPLETE).
+   - Models: `Material`, `VideoProgress`, `VideoEventLog`.
+   - Applied schema changes to Supabase PostgreSQL database via `npx prisma db push` and generated Prisma client.
+
+2. Storage Service & Dual Upload (Cloudinary + Local Disk + Direct URL):
+   - Created `StorageService` in `src/module/materials/storage.service.ts`.
+   - Automatically detects Cloudinary environment credentials (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`).
+   - Supports local disk upload (`public/uploads/`) and direct video/PDF/image URL embedding as seamless fallbacks.
+
+3. NestJS Backend Module (`src/module/materials/`):
+   - Endpoints:
+     * `POST   /materials` (Upload material - Teachers / Admins)
+     * `POST   /materials/upload-file` (File upload handling)
+     * `GET    /materials` (List materials filtered by role and department/subject)
+     * `GET    /materials/:id` (Get material details + student progress)
+     * `DELETE /materials/:id` (Delete material - Creator / HOD / Admin)
+     * `POST   /materials/:id/events` (Record live student video tracking events: PLAY, PAUSE, RESUME, SEEK, COMPLETE)
+     * `GET    /materials/:id/progress` (Fetch student's current saved progress for video resuming)
+     * `GET    /materials/:id/analytics` (Detailed video analytics for Teachers, HODs, Admins)
+
+4. Video Analytics & Session Calculation Engine:
+   - Calculates total actual watch time vs total elapsed time.
+   - Calculates session counts, pauses, resumes, and completion percentage.
+   - Detects session breaks and formats gaps (e.g., "Gap between session 1 and 2: 15 minutes", "Gap between session 2 and 3: 1 hour 2 minutes").
+   - Builds chronological event timeline with exact video timestamps and event descriptions.
+   - Enforces strict security: Students cannot access analytics endpoints (returns HTTP 403 Forbidden).
+
+5. Frontend UI Components (`components/materials/` & `app/page.tsx`):
+   - `MaterialViewer`: Custom video player with HTML5 controls, fullscreen support, auto-resume from last saved position, live event logger, and normal view side-by-side display for companion PDF/notes/image/audio.
+   - `VideoAnalyticsModal`: Interactive dashboard displaying watched vs unwatched student lists, summary metrics, session gaps, and detailed expandable event timelines.
+   - `MaterialsList`: Filterable card grid by material type and subject, with teacher upload modal and analytics triggers.

@@ -72,10 +72,19 @@ export class UsersController {
     return this.usersService.updateStatus(id, dto);
   }
 
+  /** Admin/HOD can manually remove a teacher from a secondary department */
+  @Delete('teachers/:id/teaching-departments/:departmentId')
+  @Roles(Role.ADMIN, Role.HOD)
+  removeTeachingDepartment(
+    @Param('id') id: string,
+    @Param('departmentId') departmentId: string,
+  ) {
+    return this.usersService.removeTeachingDepartment(id, departmentId);
+  }
+
   @Delete(':id')
   @Roles(Role.ADMIN)
   softDelete(@Param('id') id: string) {
     return this.usersService.softDelete(id);
   }
 }
-

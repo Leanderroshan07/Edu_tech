@@ -74,3 +74,13 @@ export class UpdateProfileDto {
   @IsString()
   qualification?: string;
 }
+
+export class AddTeacherSubjectDto {
+  @IsString()
+  subjectId!: string;
+
+  @IsEnum(['PRIMARY', 'SECONDARY'])
+  @IsOptional()
+  type?: 'PRIMARY' | 'SECONDARY';
+}
+

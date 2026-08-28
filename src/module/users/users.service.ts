@@ -86,7 +86,8 @@ export class UsersService {
             firstName: dto.firstName,
             lastName: dto.lastName,
             role: dto.role,
-            status: UserStatus.ACTIVE,
+            // Students start as PENDING until teacher/HOD approves
+            status: dto.role === Role.STUDENT ? UserStatus.PENDING : UserStatus.ACTIVE,
             phone: dto.phone,
             gender: dto.gender,
             dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
@@ -103,6 +104,14 @@ export class UsersService {
               academicYear: dto.academicYear!,
               semester: dto.semester!,
               section: dto.section,
+            },
+          });
+          // Auto-create approval request so teacher/HOD can approve
+          await tx.approvalRequest.create({
+            data: {
+              type: 'STUDENT_APPROVAL',
+              requesterId: user.id,
+              targetDeptId: dto.departmentId!,
             },
           });
         } else if (dto.role === Role.TEACHER) {
@@ -253,6 +262,7 @@ export class UsersService {
             include: {
               department: true,
               teachingDepartments: { include: { department: true } },
+              teacherSubjects: { include: { subject: true } },
             },
           },
           hodProfile: { include: { department: true } },
@@ -294,6 +304,7 @@ export class UsersService {
           include: {
             department: true,
             teachingDepartments: { include: { department: true } },
+            teacherSubjects: { include: { subject: true } },
           },
         },
         hodProfile: { include: { department: true } },
@@ -426,6 +437,61 @@ export class UsersService {
 
     return this.findOne(teacherUserId);
   }
+
+  async addTeacherSubject(
+    teacherUserId: string,
+    dto: { subjectId: string; type?: 'PRIMARY' | 'SECONDARY' },
+  ) {
+    const teacherProfile = await this.prisma.teacherProfile.findUnique({
+      where: { userId: teacherUserId },
+    });
+    if (!teacherProfile) {
+      throw new NotFoundException('Teacher profile not found for this user');
+    }
+
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: dto.subjectId },
+    });
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    try {
+      await this.prisma.teacherSubject.create({
+        data: {
+          teacherProfileId: teacherProfile.id,
+          subjectId: dto.subjectId,
+          type: dto.type ?? 'SECONDARY',
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Teacher subject assignment already exists');
+      }
+      throw error;
+    }
+
+    return this.findOne(teacherUserId);
+  }
+
+  async removeTeacherSubject(teacherUserId: string, subjectId: string) {
+    const teacherProfile = await this.prisma.teacherProfile.findUnique({
+      where: { userId: teacherUserId },
+    });
+    if (!teacherProfile) {
+      throw new NotFoundException('Teacher profile not found for this user');
+    }
+
+    await this.prisma.teacherSubject.deleteMany({
+      where: {
+        teacherProfileId: teacherProfile.id,
+        subjectId,
+      },
+    });
+
+    return this.findOne(teacherUserId);
+  }
+
 
   async updateStatus(id: string, dto: UpdateUserStatusDto) {
     await this.findOne(id);

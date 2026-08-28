@@ -21,6 +21,7 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+  PENDING
 }
 
 enum Gender {
@@ -54,6 +55,10 @@ model User {
   teacherProfile TeacherProfile?
   hodProfile     HodProfile?
 
+  sentRequests      ApprovalRequest[] @relation("ApprovalRequests")
+  reviewedRequests  ApprovalRequest[] @relation("ApprovalReviewer")
+  uploadedMaterials Material[]        @relation("TeacherMaterials")
+
   @@map("users")
 }
 
@@ -80,12 +85,92 @@ model Department {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  studentProfiles     StudentProfile[]
-  teacherProfiles     TeacherProfile[]
-  hodProfiles         HodProfile[]
-  teacherDepartments  TeacherDepartment[]
+  studentProfiles    StudentProfile[]
+  teacherProfiles    TeacherProfile[]
+  hodProfiles        HodProfile[]
+  teacherDepartments TeacherDepartment[]
+  subjects           Subject[]
+  approvalRequests   ApprovalRequest[]
+  materials          Material[]
 
   @@map("departments")
+}
+
+// ─── Approval / Request system ────────────────────────────
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RequestType {
+  STUDENT_APPROVAL // created when student is added; teacher or HOD approves
+  TEACHER_DEPT_REQUEST // teacher requests to teach in secondary dept; HOD approves
+  TEACHER_SUBJECT_REQUEST // teacher requests to teach a subject; HOD approves
+}
+
+model ApprovalRequest {
+  id               String        @id @default(uuid())
+  type             RequestType
+  requesterId      String
+  targetDeptId     String
+  subjectId        String?
+  status           RequestStatus @default(PENDING)
+  note             String?
+  createdAt        DateTime      @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+
+  requester  User       @relation("ApprovalRequests", fields: [requesterId], references: [id])
+  targetDept Department @relation(fields: [targetDeptId], references: [id])
+  subject    Subject?   @relation(fields: [subjectId], references: [id])
+  reviewer   User?      @relation("ApprovalReviewer", fields: [reviewedByUserId], references: [id])
+
+  // Partial uniqueness: only one PENDING request per (requester, dept, type) at a time.
+  // Enforced at the application layer (requests.service.ts) to allow re-requests after resolution.
+  @@index([requesterId, targetDeptId, type, status])
+  @@map("approval_requests")
+}
+
+// ─── Subject ──────────────────────────────────────────────
+
+model Subject {
+  id           String     @id @default(uuid())
+  code         String     @unique
+  name         String
+  description  String?
+  credits      Int        @default(3)
+  semester     Int?
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  teacherSubjects  TeacherSubject[]
+  approvalRequests ApprovalRequest[]
+  materials        Material[]
+
+  @@map("subjects")
+}
+
+enum SubjectType {
+  PRIMARY
+  SECONDARY
+}
+
+model TeacherSubject {
+  id               String         @id @default(uuid())
+  teacherProfileId String
+  teacherProfile   TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  subjectId        String
+  subject          Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  type             SubjectType    @default(SECONDARY)
+  createdAt        DateTime       @default(now())
+
+  @@unique([teacherProfileId, subjectId])
+  @@map("teacher_subjects")
 }
 
 model StudentProfile {
@@ -96,28 +181,33 @@ model StudentProfile {
   department     Department @relation(fields: [departmentId], references: [id])
   registerNumber String     @unique
   admissionYear  Int
-  academicYear   String
+  academicYear   Int
   semester       Int
   section        String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
+  videoProgresses    VideoProgress[]
+  videoWatchSessions VideoWatchSession[]
+  videoEventLogs     VideoEventLog[]
+
   @@map("student_profiles")
 }
 
 model TeacherProfile {
-  id             String              @id @default(uuid())
-  userId         String              @unique
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String     @id @default(uuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   departmentId   String
-  department     Department          @relation(fields: [departmentId], references: [id])
-  employeeNumber String              @unique
+  department     Department @relation(fields: [departmentId], references: [id])
+  employeeNumber String     @unique
   designation    String?
   qualification  String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   teachingDepartments TeacherDepartment[]
+  teacherSubjects     TeacherSubject[]
 
   @@map("teacher_profiles")
 }
@@ -145,4 +235,109 @@ model HodProfile {
   updatedAt      DateTime   @updatedAt
 
   @@map("hod_profiles")
+}
+
+// ─── Learning Materials & Video Analytics ────────────────
+
+enum MaterialType {
+  VIDEO
+  PDF
+  NOTES
+  IMAGE
+  AUDIO
+}
+
+enum VideoEventType {
+  PLAY
+  PAUSE
+  RESUME
+  SEEK
+  HEARTBEAT
+  COMPLETE
+  SESSION_END
+}
+
+model Material {
+  id              String       @id @default(uuid())
+  title           String
+  description     String?
+  type            MaterialType
+  fileUrl         String
+  durationSeconds Float?       @default(0)
+  teacherId       String
+  teacher         User         @relation("TeacherMaterials", fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId       String?
+  subject         Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  departmentId    String
+  department      Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  videoProgresses    VideoProgress[]
+  videoWatchSessions VideoWatchSession[]
+  videoEventLogs     VideoEventLog[]
+
+  @@map("materials")
+}
+
+model VideoProgress {
+  id                    String         @id @default(uuid())
+  studentProfileId      String
+  studentProfile        StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  materialId            String
+  material              Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  lastPositionSeconds   Float          @default(0)
+  completionPercent     Float          @default(0)
+  isCompleted           Boolean        @default(false)
+  firstWatchedAt        DateTime?
+  lastWatchedAt         DateTime?
+  finishedAt            DateTime?
+  totalWatchTimeSeconds Float          @default(0)
+  sessionCount          Int            @default(0)
+  pauseCount            Int            @default(0)
+  resumeCount           Int            @default(0)
+  metadata              Json?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([studentProfileId, materialId])
+  @@map("video_progresses")
+}
+
+model VideoWatchSession {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  materialId       String
+  material         Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  startedAt        DateTime
+  endedAt          DateTime?
+  startPosSec      Float
+  endPosSec        Float?
+  watchedSec       Float          @default(0)
+
+  events VideoEventLog[]
+
+  @@index([studentProfileId, materialId, startedAt])
+  @@map("video_watch_sessions")
+}
+
+model VideoEventLog {
+  id               String             @id @default(uuid())
+  sessionId        String?
+  session          VideoWatchSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  studentProfileId String
+  studentProfile   StudentProfile     @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  materialId       String
+  material         Material           @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  eventType        VideoEventType
+  positionSeconds  Float
+  clientTs         DateTime           @default(now())
+  serverTs         DateTime           @default(now())
+  metadata         Json?
+  timestamp        DateTime           @default(now())
+
+  @@index([sessionId])
+  @@index([studentProfileId, materialId, clientTs])
+  @@map("video_event_logs")
 }
