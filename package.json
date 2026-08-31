@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev --webpack",
     "start:api": "ts-node --project tsconfig.server.json --transpile-only main.ts",
+    "start:backend": "node dist/main.js",
     "build:api": "tsc -p tsconfig.server.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:prod": "prisma migrate deploy",
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
     "build": "next build --webpack",
     "start": "next start",
