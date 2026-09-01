@@ -72,17 +72,22 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, [token, notify]);
 
-  /* ── Login ── */
   const handleLogin = async (email: string, password: string) => {
-    const data = await fetch("http://localhost:4000/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    }).then(r => r.json());
-    const jwt = data.access_token ?? data.token ?? data.accessToken;
-    if (!jwt) throw new Error("No token in response");
-    setToken(jwt);
-    notify("Signed in successfully", "success");
+    try {
+      const data = await apiCall("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const jwt = data.accessToken ?? data.access_token ?? data.token;
+      if (!jwt) throw new Error("No token in response");
+      setToken(jwt);
+      notify("Signed in successfully", "success");
+    } catch (err: any) {
+      if (err?.message === "Failed to fetch" || err?.name === "TypeError") {
+        throw new Error("Cannot connect to backend (http://localhost:4000). Please start the backend server with `npm run start:api`.");
+      }
+      throw err;
+    }
   };
 
   /* ── Logout ── */

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../common/api';
 import MaterialViewer from './MaterialViewer';
 import VideoAnalyticsModal from './VideoAnalyticsModal';
 
@@ -72,7 +73,7 @@ export default function MaterialsList({
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/materials', {
+      const res = await fetch(`${API_BASE}/materials`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -88,7 +89,7 @@ export default function MaterialsList({
 
   const fetchDepartments = async () => {
     try {
-      const res = await fetch('http://localhost:4000/departments', {
+      const res = await fetch(`${API_BASE}/departments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -105,7 +106,7 @@ export default function MaterialsList({
 
   const fetchSubjects = async () => {
     try {
-      const res = await fetch('http://localhost:4000/subjects', {
+      const res = await fetch(`${API_BASE}/subjects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -144,7 +145,7 @@ export default function MaterialsList({
         const formData = new FormData();
         formData.append('file', uploadFile);
 
-        const uploadRes = await fetch('http://localhost:4000/materials/upload-file', {
+        const uploadRes = await fetch(`${API_BASE}/materials/upload-file`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -164,7 +165,7 @@ export default function MaterialsList({
       }
 
       // Create Material Record
-      const createRes = await fetch('http://localhost:4000/materials', {
+      const createRes = await fetch(`${API_BASE}/materials`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +205,7 @@ export default function MaterialsList({
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this material?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/materials/${id}`, {
+      const res = await fetch(`${API_BASE}/materials/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

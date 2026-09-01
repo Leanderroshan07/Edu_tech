@@ -53,3 +53,5 @@ next-env.d.ts
 
 # Temporary directories
 .temp/
+
+.vercel

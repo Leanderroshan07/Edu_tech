@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../common/api';
 
 interface VideoAnalyticsModalProps {
   materialId: string;
@@ -87,7 +88,7 @@ export default function VideoAnalyticsModal({
   const fetchAnalytics = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/materials/${materialId}/analytics`, {
+      const res = await fetch(`${API_BASE}/materials/${materialId}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {

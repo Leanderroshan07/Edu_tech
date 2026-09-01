@@ -2,7 +2,8 @@
  * Shared API fetch utility.
  * Each role App calls this with its own token — no global state.
  */
-export const API_BASE = 'http://localhost:4000';
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export async function apiCall(
   path: string,

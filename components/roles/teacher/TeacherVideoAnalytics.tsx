@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../../common/api';
 
 interface TimelineEvent {
   eventType: string;
@@ -113,7 +114,7 @@ export function TeacherVideoAnalytics({ materialId, token, onClose }: Props) {
   const fetchAnalytics = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/materials/${materialId}/analytics`, {
+      const res = await fetch(`${API_BASE}/materials/${materialId}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error((await res.json()).message ?? 'Failed');

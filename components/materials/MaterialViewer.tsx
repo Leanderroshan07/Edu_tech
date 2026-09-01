@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { API_BASE } from '../common/api';
 
 interface MaterialViewerProps {
   material: {
@@ -55,11 +56,11 @@ export default function MaterialViewer({ material, token, onClose }: MaterialVie
       // If SESSION_END on tab close, sendBeacon
       if (eventType === 'SESSION_END' && typeof navigator !== 'undefined' && navigator.sendBeacon) {
         const blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(`http://localhost:4000/materials/${material.id}/events`, blob);
+        navigator.sendBeacon(`${API_BASE}/materials/${material.id}/events`, blob);
         return;
       }
 
-      const res = await fetch(`http://localhost:4000/materials/${material.id}/events`, {
+      const res = await fetch(`${API_BASE}/materials/${material.id}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

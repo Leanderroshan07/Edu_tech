@@ -163,11 +163,13 @@ export class AuthService {
 	}
 
 	private cookieOptions() {
+		const isProd = process.env.NODE_ENV === 'production';
+		const sameSite: 'none' | 'lax' = isProd ? 'none' : 'lax';
 		return {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax' as const,
-			path: '/auth',
+			secure: isProd,
+			sameSite,
+			path: '/',
 		};
 	}
 
